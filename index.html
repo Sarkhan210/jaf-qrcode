@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaf QRCode – Pulsuz QR Kod Yaradıcı</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131c;
+    --surface2: #1c1c2a;
+    --border: #2a2a3d;
+    --accent: #7c5cfc;
+    --accent2: #c084fc;
+    --accent3: #38bdf8;
+    --text: #e8e8f0;
+    --muted: #6b6b85;
+    --success: #34d399;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background ambient */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -30%;
+    left: -20%;
+    width: 70%;
+    height: 70%;
+    background: radial-gradient(ellipse, rgba(124,92,252,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: -20%;
+    right: -10%;
+    width: 50%;
+    height: 50%;
+    background: radial-gradient(ellipse, rgba(56,189,248,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 0 40px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 48px; height: 48px;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 10px rgba(124,92,252,0.5));
+  }
+
+  .logo-name-row {
+    display: flex; align-items: baseline; gap: 2px;
+  }
+
+  .logo-name-jaf {
+    font-size: 22px; font-weight: 700; color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .logo-name-qr {
+    font-size: 22px; font-weight: 700;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.01em;
+  }
+
+  .logo-sub {
+    font-size: 11px; color: var(--muted); font-weight: 400;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+  }
+
+  /* LANG SWITCHER */
+  .lang-switch {
+    display: flex; gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 5px;
+  }
+
+  .lang-btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px; font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 7px;
+    border: none; cursor: pointer;
+    color: var(--muted);
+    background: transparent;
+    transition: all 0.2s;
+    letter-spacing: 0.06em;
+  }
+
+  .lang-btn.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    box-shadow: 0 2px 12px rgba(124,92,252,0.35);
+  }
+
+  .lang-btn:hover:not(.active) { color: var(--text); background: var(--surface2); }
+
+  /* HERO */
+  .hero {
+    text-align: center;
+    padding: 10px 0 48px;
+  }
+
+  .hero h1 {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 700; line-height: 1.1;
+    margin-bottom: 14px;
+  }
+
+  .hero h1 span {
+    background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero p {
+    color: var(--muted); font-size: 17px; max-width: 520px; margin: 0 auto;
+  }
+
+  /* BADGES */
+  .badges {
+    display: flex; gap: 10px; justify-content: center;
+    flex-wrap: wrap; margin-top: 22px;
+  }
+
+  .badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px; letter-spacing: 0.07em;
+    padding: 5px 14px; border-radius: 99px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    background: var(--surface);
+  }
+
+  .badge.green { border-color: rgba(52,211,153,0.3); color: var(--success); }
+  .badge.purple { border-color: rgba(124,92,252,0.3); color: var(--accent2); }
+  .badge.blue { border-color: rgba(56,189,248,0.3); color: var(--accent3); }
+
+  /* MAIN GRID */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  @media (max-width: 800px) {
+    .main-grid { grid-template-columns: 1fr; }
+  }
+
+  /* PANEL */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+  }
+
+  .panel-title {
+    font-size: 13px; font-weight: 600;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .panel-title::before {
+    content: '';
+    width: 3px; height: 14px;
+    background: linear-gradient(to bottom, var(--accent), var(--accent2));
+    border-radius: 2px;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex; gap: 0;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    margin-bottom: 22px;
+  }
+
+  .tab {
+    flex: 1; padding: 10px 16px;
+    border: none; cursor: pointer;
+    border-radius: 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px; font-weight: 500;
+    color: var(--muted);
+    background: transparent;
+    transition: all 0.2s;
+  }
+
+  .tab.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  /* INPUT */
+  .input-wrap { position: relative; }
+
+  .main-input {
+    width: 100%;
+    padding: 16px 18px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 15px;
+    font-family: 'Space Grotesk', sans-serif;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    resize: vertical;
+    min-height: 54px;
+  }
+
+  .main-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(124,92,252,0.12);
+  }
+
+  .main-input::placeholder { color: var(--muted); }
+
+  /* IMAGE UPLOAD */
+  .upload-area {
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-sm);
+    padding: 36px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upload-area:hover { border-color: var(--accent); background: rgba(124,92,252,0.04); }
+  .upload-area.active { border-color: var(--success); }
+
+  .upload-area input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+
+  .upload-icon { font-size: 36px; margin-bottom: 10px; }
+  .upload-text { color: var(--muted); font-size: 14px; }
+  .upload-text strong { color: var(--accent2); }
+
+  .upload-preview {
+    margin-top: 14px;
+    display: none;
+    align-items: center; gap: 12px;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+  }
+
+  .upload-preview.show { display: flex; }
+  .upload-preview img { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; }
+  .upload-preview span { font-size: 13px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .upload-clear { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; }
+
+  /* SECTION DIVIDER */
+  .section-gap { height: 24px; }
+
+  /* COLOR SECTION */
+  .color-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .color-field label {
+    display: block;
+    font-size: 12px; color: var(--muted);
+    margin-bottom: 7px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+
+  .color-pick-row {
+    display: flex; gap: 8px; align-items: center;
+  }
+
+  .color-swatch {
+    width: 40px; height: 40px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    overflow: hidden;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .color-swatch input[type="color"] {
+    position: absolute;
+    width: 200%; height: 200%;
+    top: -50%; left: -50%;
+    border: none; padding: 0;
+    cursor: pointer;
+    background: none;
+  }
+
+  .hex-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  .hex-input:focus { border-color: var(--accent); }
+
+  /* QUICK PRESETS */
+  .presets-label {
+    font-size: 12px; color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+  }
+
+  .presets {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+
+  .preset {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    position: relative;
+  }
+
+  .preset:hover { transform: scale(1.15); box-shadow: 0 0 0 3px rgba(255,255,255,0.2); }
+  .preset.selected { border-color: white; box-shadow: 0 0 0 4px rgba(255,255,255,0.15); }
+
+  /* STYLES SECTION */
+  .styles-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .style-card {
+    aspect-ratio: 1;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 5px;
+    transition: all 0.2s;
+    padding: 6px;
+    overflow: hidden;
+  }
+
+  .style-card:hover { border-color: var(--accent); background: rgba(124,92,252,0.07); }
+
+  .style-card.selected {
+    border-color: var(--accent);
+    background: rgba(124,92,252,0.12);
+    box-shadow: 0 0 0 3px rgba(124,92,252,0.15);
+  }
+
+  .style-card canvas, .style-card img {
+    width: 100% !important; height: 100% !important;
+    object-fit: contain;
+  }
+
+  .style-label {
+    font-size: 9px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    text-align: center;
+    line-height: 1.2;
+    margin-top: 3px;
+  }
+
+  /* GENERATE BUTTON */
+  .gen-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: var(--radius-sm);
+    color: white;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px; font-weight: 600;
+    cursor: pointer;
+    margin-top: 22px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(124,92,252,0.35);
+    letter-spacing: 0.02em;
+  }
+
+  .gen-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(124,92,252,0.45); }
+  .gen-btn:active { transform: translateY(0); }
+
+  /* QR OUTPUT PANEL */
+  .output-panel {
+    position: sticky;
+    top: 20px;
+  }
+
+  .qr-canvas-wrap {
+    display: flex; align-items: center; justify-content: center;
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 20px;
+    min-height: 240px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .qr-canvas-wrap.gradient-bg {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+  }
+  .qr-canvas-wrap.dark-bg { background: #111; }
+  .qr-canvas-wrap.transparent-bg { background: repeating-conic-gradient(#ccc 0% 25%, #eee 0% 50%) 0 0 / 14px 14px; }
+  .qr-canvas-wrap.neon-bg { background: #0a0a0a; box-shadow: inset 0 0 40px rgba(124,92,252,0.15); }
+  .qr-canvas-wrap.paper-bg { background: #f5f0e8; }
+
+  #qr-output { display: flex; align-items: center; justify-content: center; }
+  #qr-output img { max-width: 100%; }
+  #qr-output canvas { max-width: 100%; }
+
+  .qr-placeholder {
+    text-align: center; padding: 20px;
+  }
+
+  .qr-placeholder-icon {
+    font-size: 56px; margin-bottom: 12px; opacity: 0.3;
+    display: block;
+  }
+
+  .qr-placeholder-text { color: var(--muted); font-size: 14px; }
+
+  /* DOWNLOAD BUTTONS */
+  .dl-row {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .dl-btn {
+    padding: 13px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+
+  .dl-btn:hover { border-color: var(--accent2); color: var(--accent2); background: rgba(192,132,252,0.07); }
+
+  .dl-btn.png { border-color: rgba(56,189,248,0.3); color: var(--accent3); }
+  .dl-btn.png:hover { background: rgba(56,189,248,0.07); }
+
+  .dl-btn.svg { border-color: rgba(192,132,252,0.3); color: var(--accent2); }
+  .dl-btn.svg:hover { background: rgba(192,132,252,0.07); }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 22px;
+    font-size: 14px; font-weight: 500;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    z-index: 1000;
+    display: flex; align-items: center; gap: 10px;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: rgba(52,211,153,0.3); color: var(--success); }
+  .toast.error { border-color: rgba(248,113,113,0.3); color: #f87171; }
+
+  /* ERROR STATE */
+  .field-error { font-size: 12px; color: #f87171; margin-top: 6px; display: none; }
+  .field-error.show { display: block; }
+
+  /* FOOTER */
+  footer {
+    margin-top: 60px; text-align: center;
+    color: var(--muted); font-size: 13px;
+    border-top: 1px solid var(--border);
+    padding-top: 30px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+
+  footer strong { color: var(--accent2); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <!-- Jaf QRCode minimal SVG logo -->
+      <svg class="logo-icon" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none">
+        <defs>
+          <linearGradient id="lg1" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#7c5cfc"/>
+            <stop offset="100%" stop-color="#38bdf8"/>
+          </linearGradient>
+        </defs>
+        <!-- Outer rounded square -->
+        <rect x="1" y="1" width="46" height="46" rx="11" stroke="url(#lg1)" stroke-width="2.2"/>
+        <!-- Top-left finder corner -->
+        <rect x="7" y="7" width="13" height="13" rx="3" fill="url(#lg1)"/>
+        <rect x="10" y="10" width="7" height="7" rx="1.5" fill="#0a0a0f"/>
+        <rect x="11.5" y="11.5" width="4" height="4" rx="0.8" fill="url(#lg1)"/>
+        <!-- Top-right finder corner -->
+        <rect x="28" y="7" width="13" height="13" rx="3" fill="url(#lg1)"/>
+        <rect x="31" y="10" width="7" height="7" rx="1.5" fill="#0a0a0f"/>
+        <rect x="32.5" y="11.5" width="4" height="4" rx="0.8" fill="url(#lg1)"/>
+        <!-- Bottom-left finder corner -->
+        <rect x="7" y="28" width="13" height="13" rx="3" fill="url(#lg1)"/>
+        <rect x="10" y="31" width="7" height="7" rx="1.5" fill="#0a0a0f"/>
+        <rect x="11.5" y="32.5" width="4" height="4" rx="0.8" fill="url(#lg1)"/>
+        <!-- Data dots pattern (bottom-right area) -->
+        <rect x="28" y="28" width="3.5" height="3.5" rx="0.8" fill="url(#lg1)"/>
+        <rect x="33" y="28" width="3.5" height="3.5" rx="0.8" fill="url(#lg1)" opacity="0.6"/>
+        <rect x="37.5" y="28" width="3.5" height="3.5" rx="0.8" fill="url(#lg1)" opacity="0.4"/>
+        <rect x="28" y="32.5" width="3.5" height="3.5" rx="0.8" fill="url(#lg1)" opacity="0.5"/>
+        <rect x="33" y="32.5" width="3.5" height="3.5" rx="0.8" fill="url(#lg1)"/>
+        <rect x="37.5" y="32.5" width="3.5" height="3.5" rx="0.8" fill="url(#lg1)" opacity="0.7"/>
+        <rect x="28" y="37" width="3.5" height="3.5" rx="0.8" fill="url(#lg1)" opacity="0.8"/>
+        <rect x="33" y="37" width="3.5" height="3.5" rx="0.8" fill="url(#lg1)" opacity="0.3"/>
+        <rect x="37.5" y="37" width="3.5" height="3.5" rx="0.8" fill="url(#lg1)"/>
+      </svg>
+
+      <div>
+        <div class="logo-name-row">
+          <span class="logo-name-jaf">Jaf</span>
+          <span class="logo-name-qr">QRCode</span>
+        </div>
+        <div class="logo-sub" data-i18n="tagline">FREE · NO LIMITS · NO ADS</div>
+      </div>
+    </div>
+    <div class="lang-switch">
+      <button class="lang-btn active" onclick="setLang('az')">AZ</button>
+      <button class="lang-btn" onclick="setLang('ru')">RU</button>
+      <button class="lang-btn" onclick="setLang('en')">EN</button>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero">
+    <h1><span data-i18n="hero_title">İstənilən linki və ya şəkili</span><br><span>QR Koda</span> <span data-i18n="hero_title2">çevirin</span></h1>
+    <p data-i18n="hero_sub">Pulsuz, reklamsız, 1 milyondan çox rəng, 10 stil, PNG & SVG yükləmə</p>
+    <div class="badges">
+      <span class="badge green" data-i18n="badge_free">✓ Tamamilə pulsuz</span>
+      <span class="badge purple" data-i18n="badge_colors">✦ 1M+ rəng</span>
+      <span class="badge blue" data-i18n="badge_styles">◈ 10 eksport stili</span>
+      <span class="badge" data-i18n="badge_noads">✕ Reklam yoxdur</span>
+    </div>
+  </div>
+
+  <!-- MAIN GRID -->
+  <div class="main-grid">
+
+    <!-- LEFT PANEL -->
+    <div>
+
+      <!-- INPUT PANEL -->
+      <div class="panel" style="margin-bottom:20px">
+        <div class="panel-title" data-i18n="section_input">MƏZMUN</div>
+
+        <div class="tabs">
+          <button class="tab active" onclick="switchTab('link')" data-tab="link" data-i18n="tab_link">🔗 Link / Mətn</button>
+          <button class="tab" onclick="switchTab('image')" data-tab="image" data-i18n="tab_image">🖼 Şəkil</button>
+        </div>
+
+        <!-- Link tab -->
+        <div id="tab-link">
+          <div class="input-wrap">
+            <textarea class="main-input" id="link-input" rows="3"
+              placeholder="https://example.com"></textarea>
+            <div class="field-error" id="link-error" data-i18n="error_empty">Zəhmət olmasa link və ya mətn daxil edin</div>
+          </div>
+        </div>
+
+        <!-- Image tab -->
+        <div id="tab-image" style="display:none">
+          <div class="upload-area" id="upload-area">
+            <input type="file" id="img-file" accept="image/*" onchange="handleFileSelect(this)">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text" data-i18n="upload_text">Şəkli bura <strong data-i18n="upload_drag">sürükləyin</strong> və ya <strong data-i18n="upload_click">seçin</strong></div>
+            <div style="font-size:12px;color:var(--muted);margin-top:6px">JPG, PNG, GIF, WebP · maks 5MB</div>
+          </div>
+          <div class="upload-preview" id="upload-preview">
+            <img id="preview-img" src="" alt="">
+            <span id="preview-name"></span>
+            <button class="upload-clear" onclick="clearFile()">✕</button>
+          </div>
+          <div class="field-error" id="img-error" data-i18n="error_img">Zəhmət olmasa şəkil seçin</div>
+        </div>
+      </div>
+
+      <!-- COLORS PANEL -->
+      <div class="panel" style="margin-bottom:20px">
+        <div class="panel-title" data-i18n="section_colors">RƏNGLƏR</div>
+
+        <div class="color-row">
+          <div class="color-field">
+            <label data-i18n="fg_color">QR Rəngi (ön plan)</label>
+            <div class="color-pick-row">
+              <div class="color-swatch" id="fg-swatch" style="background:#1a0533">
+                <input type="color" id="fg-color" value="#1a0533" oninput="onColorChange('fg', this.value)">
+              </div>
+              <input class="hex-input" id="fg-hex" value="#1a0533" maxlength="7" oninput="onHexInput('fg', this.value)">
+            </div>
+          </div>
+          <div class="color-field">
+            <label data-i18n="bg_color">Arxa Plan Rəngi</label>
+            <div class="color-pick-row">
+              <div class="color-swatch" id="bg-swatch" style="background:#ffffff">
+                <input type="color" id="bg-color" value="#ffffff" oninput="onColorChange('bg', this.value)">
+              </div>
+              <input class="hex-input" id="bg-hex" value="#ffffff" maxlength="7" oninput="onHexInput('bg', this.value)">
+            </div>
+          </div>
+        </div>
+
+        <div class="presets-label" data-i18n="presets">Hazır rəng kombinasiyaları:</div>
+        <div class="presets">
+          <div class="preset" style="background:linear-gradient(135deg,#1a0533,#7c5cfc)" title="Violet" onclick="applyPreset('#1a0533','#f5f0ff')"></div>
+          <div class="preset" style="background:linear-gradient(135deg,#0f172a,#38bdf8)" title="Cosmic" onclick="applyPreset('#0f172a','#e0f7ff')"></div>
+          <div class="preset" style="background:linear-gradient(135deg,#14532d,#4ade80)" title="Forest" onclick="applyPreset('#14532d','#f0fdf4')"></div>
+          <div class="preset" style="background:linear-gradient(135deg,#7c2d12,#fb923c)" title="Ember" onclick="applyPreset('#7c2d12','#fff7ed')"></div>
+          <div class="preset" style="background:linear-gradient(135deg,#000000,#ffffff)" title="Classic" onclick="applyPreset('#000000','#ffffff')"></div>
+          <div class="preset" style="background:linear-gradient(135deg,#831843,#f9a8d4)" title="Rose" onclick="applyPreset('#831843','#fdf2f8')"></div>
+          <div class="preset" style="background:linear-gradient(135deg,#1e3a5f,#60a5fa)" title="Navy" onclick="applyPreset('#1e3a5f','#eff6ff')"></div>
+          <div class="preset" style="background:linear-gradient(135deg,#4a1942,#c084fc)" title="Amethyst" onclick="applyPreset('#4a1942','#fdf4ff')"></div>
+          <div class="preset" style="background:linear-gradient(135deg,#0c4a6e,#7dd3fc)" title="Ocean" onclick="applyPreset('#0c4a6e','#f0f9ff')"></div>
+          <div class="preset" style="background:linear-gradient(135deg,#422006,#a3e635)" title="Matcha" onclick="applyPreset('#422006','#f7fee7')"></div>
+          <div class="preset" style="background:linear-gradient(135deg,#1c1c1c,#d97706)" title="Gold" onclick="applyPreset('#1c1c1c','#fffbeb')"></div>
+          <div class="preset" style="background:linear-gradient(135deg,#ff006e,#fb5607)" title="Neon" onclick="applyPreset('#ff006e','#fff0f3')"></div>
+        </div>
+      </div>
+
+      <!-- STYLES PANEL -->
+      <div class="panel">
+        <div class="panel-title" data-i18n="section_styles">EKSPORT STİLİ</div>
+        <div class="styles-grid" id="styles-grid">
+          <!-- filled by JS -->
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:8px;font-family:'Space Mono',monospace" data-i18n="styles_hint">Stil seçin, sonra QR kodu yaradın</div>
+      </div>
+
+      <!-- GENERATE -->
+      <button class="gen-btn" onclick="generateQR()" data-i18n="gen_btn">⚡ QR Kod Yarat</button>
+
+    </div>
+
+    <!-- RIGHT: OUTPUT -->
+    <div class="output-panel">
+      <div class="panel">
+        <div class="panel-title" data-i18n="section_preview">ÖNİZLƏMƏ</div>
+
+        <div class="qr-canvas-wrap" id="qr-bg-wrap">
+          <div id="qr-output">
+            <div class="qr-placeholder">
+              <span class="qr-placeholder-icon">◻</span>
+              <div class="qr-placeholder-text" data-i18n="placeholder">Məlumatı daxil edib<br>QR Kod Yarat düyməsinə basın</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dl-row">
+          <button class="dl-btn png" onclick="downloadPNG()" data-i18n="dl_png">⬇ PNG Yüklə</button>
+          <button class="dl-btn svg" onclick="downloadSVG()" data-i18n="dl_svg">⬇ SVG Yüklə</button>
+        </div>
+      </div>
+
+      <!-- INFO BOX -->
+      <div class="panel" style="margin-top:20px;padding:20px">
+        <div style="font-size:13px;color:var(--muted);line-height:1.7">
+          <div style="color:var(--text);font-weight:600;margin-bottom:10px" data-i18n="features_title">🛡 Xüsusiyyətlər</div>
+          <div data-i18n="feat1">✓ Heç bir qeydiyyat tələb olunmur</div>
+          <div data-i18n="feat2">✓ Məlumatlar serverə göndərilmir</div>
+          <div data-i18n="feat3">✓ 1.000.000+ rəng dəstəyi</div>
+          <div data-i18n="feat4">✓ 10 fərqli eksport stili</div>
+          <div data-i18n="feat5">✓ PNG və SVG formatları</div>
+          <div data-i18n="feat6">✓ Tamamilə pulsuz & reklamsız</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <span data-i18n="footer_made">Sevgi ilə hazırlandı &mdash;</span> <strong>Jaf QRCode</strong> &mdash; <span data-i18n="footer_free">Tamamilə Pulsuz</span>
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── TRANSLATIONS ──────────────────────────────────────────────────────────────
+const i18n = {
+  az: {
+    tagline: "PULSUZ · LİMİTSİZ · REKLAMSIZ",
+    hero_title: "İstənilən linki və ya şəkili",
+    hero_title2: "çevirin",
+    hero_sub: "Pulsuz, reklamsız, 1 milyondan çox rəng, 10 stil, PNG & SVG yükləmə",
+    badge_free: "✓ Tamamilə pulsuz",
+    badge_colors: "✦ 1M+ rəng",
+    badge_styles: "◈ 10 eksport stili",
+    badge_noads: "✕ Reklam yoxdur",
+    section_input: "MƏZMUn",
+    tab_link: "🔗 Link / Mətn",
+    tab_image: "🖼 Şəkil",
+    upload_text: "Şəkli bura ",
+    upload_drag: "sürükləyin",
+    upload_click: "seçin",
+    error_empty: "Zəhmət olmasa link və ya mətn daxil edin",
+    error_img: "Zəhmət olmasa şəkil seçin",
+    section_colors: "RƏNGLƏR",
+    fg_color: "QR Rəngi (ön plan)",
+    bg_color: "Arxa Plan Rəngi",
+    presets: "Hazır rəng kombinasiyaları:",
+    section_styles: "EKSPORT STİLİ",
+    styles_hint: "Stil seçin, sonra QR kodu yaradın",
+    gen_btn: "⚡ QR Kod Yarat",
+    section_preview: "ÖNİZLƏMƏ",
+    placeholder: "Məlumatı daxil edib<br>QR Kod Yarat düyməsinə basın",
+    dl_png: "⬇ PNG Yüklə",
+    dl_svg: "⬇ SVG Yüklə",
+    features_title: "🛡 Xüsusiyyətlər",
+    feat1: "✓ Heç bir qeydiyyat tələb olunmur",
+    feat2: "✓ Məlumatlar serverə göndərilmir",
+    feat3: "✓ 1.000.000+ rəng dəstəyi",
+    feat4: "✓ 10 fərqli eksport stili",
+    feat5: "✓ PNG və SVG formatları",
+    feat6: "✓ Tamamilə pulsuz & reklamsız",
+    footer_made: "Sevgi ilə hazırlandı —",
+    footer_free: "Tamamilə Pulsuz",
+    toast_gen: "QR Kod uğurla yaradıldı!",
+    toast_png: "PNG uğurla yükləndi!",
+    toast_svg: "SVG uğurla yükləndi!",
+    toast_nogen: "Əvvəlcə QR kodu yaradın!",
+    toast_nolink: "Link və ya mətn daxil edin!",
+    toast_noimg: "Şəkil seçin!"
+  },
+  ru: {
+    tagline: "БЕСПЛАТНО · БЕЗ ЛИМИТА · БЕЗ РЕКЛАМЫ",
+    hero_title: "Преобразуйте любую ссылку или изображение",
+    hero_title2: "в QR-код",
+    hero_sub: "Бесплатно, без рекламы, более 1 миллиона цветов, 10 стилей, загрузка PNG и SVG",
+    badge_free: "✓ Полностью бесплатно",
+    badge_colors: "✦ 1M+ цветов",
+    badge_styles: "◈ 10 стилей экспорта",
+    badge_noads: "✕ Без рекламы",
+    section_input: "СОДЕРЖАНИЕ",
+    tab_link: "🔗 Ссылка / Текст",
+    tab_image: "🖼 Изображение",
+    upload_text: "Перетащите сюда ",
+    upload_drag: "изображение",
+    upload_click: "или выберите",
+    error_empty: "Пожалуйста, введите ссылку или текст",
+    error_img: "Пожалуйста, выберите изображение",
+    section_colors: "ЦВЕТА",
+    fg_color: "Цвет QR (передний план)",
+    bg_color: "Цвет фона",
+    presets: "Готовые цветовые комбинации:",
+    section_styles: "СТИЛЬ ЭКСПОРТА",
+    styles_hint: "Выберите стиль, затем создайте QR-код",
+    gen_btn: "⚡ Создать QR-код",
+    section_preview: "ПРЕДПРОСМОТР",
+    placeholder: "Введите данные и<br>нажмите «Создать QR-код»",
+    dl_png: "⬇ Скачать PNG",
+    dl_svg: "⬇ Скачать SVG",
+    features_title: "🛡 Возможности",
+    feat1: "✓ Регистрация не требуется",
+    feat2: "✓ Данные не отправляются на сервер",
+    feat3: "✓ Поддержка 1.000.000+ цветов",
+    feat4: "✓ 10 различных стилей экспорта",
+    feat5: "✓ Форматы PNG и SVG",
+    feat6: "✓ Полностью бесплатно и без рекламы",
+    footer_made: "Создано с любовью —",
+    footer_free: "Полностью бесплатно",
+    toast_gen: "QR-код успешно создан!",
+    toast_png: "PNG успешно загружен!",
+    toast_svg: "SVG успешно загружен!",
+    toast_nogen: "Сначала создайте QR-код!",
+    toast_nolink: "Введите ссылку или текст!",
+    toast_noimg: "Выберите изображение!"
+  },
+  en: {
+    tagline: "FREE · UNLIMITED · NO ADS",
+    hero_title: "Turn any link or image",
+    hero_title2: "into a QR Code",
+    hero_sub: "Free, ad-free, 1M+ colors, 10 export styles, PNG & SVG download",
+    badge_free: "✓ Completely free",
+    badge_colors: "✦ 1M+ colors",
+    badge_styles: "◈ 10 export styles",
+    badge_noads: "✕ No ads",
+    section_input: "CONTENT",
+    tab_link: "🔗 Link / Text",
+    tab_image: "🖼 Image",
+    upload_text: "Drop your image here ",
+    upload_drag: "or drag",
+    upload_click: "click to choose",
+    error_empty: "Please enter a link or text",
+    error_img: "Please select an image",
+    section_colors: "COLORS",
+    fg_color: "QR Color (foreground)",
+    bg_color: "Background Color",
+    presets: "Quick color combinations:",
+    section_styles: "EXPORT STYLE",
+    styles_hint: "Pick a style, then generate QR code",
+    gen_btn: "⚡ Generate QR Code",
+    section_preview: "PREVIEW",
+    placeholder: "Enter your data and<br>click Generate QR Code",
+    dl_png: "⬇ Download PNG",
+    dl_svg: "⬇ Download SVG",
+    features_title: "🛡 Features",
+    feat1: "✓ No registration required",
+    feat2: "✓ Data never sent to server",
+    feat3: "✓ 1,000,000+ color support",
+    feat4: "✓ 10 different export styles",
+    feat5: "✓ PNG and SVG formats",
+    feat6: "✓ Completely free & ad-free",
+    footer_made: "Made with love —",
+    footer_free: "Completely Free",
+    toast_gen: "QR Code generated successfully!",
+    toast_png: "PNG downloaded successfully!",
+    toast_svg: "SVG downloaded successfully!",
+    toast_nogen: "Generate a QR code first!",
+    toast_nolink: "Enter a link or text!",
+    toast_noimg: "Select an image!"
+  }
+};
+
+let currentLang = 'az';
+
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase() === lang));
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (i18n[lang][key] !== undefined) {
+      el.innerHTML = i18n[lang][key];
+    }
+  });
+  document.documentElement.lang = lang;
+}
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+let currentTab = 'link';
+
+function switchTab(t) {
+  currentTab = t;
+  document.getElementById('tab-link').style.display = t === 'link' ? '' : 'none';
+  document.getElementById('tab-image').style.display = t === 'image' ? '' : 'none';
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.getAttribute('data-tab') === t));
+}
+
+// ── FILE UPLOAD ───────────────────────────────────────────────────────────────
+let fileDataUrl = null;
+
+function handleFileSelect(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    fileDataUrl = e.target.result;
+    document.getElementById('preview-img').src = fileDataUrl;
+    document.getElementById('preview-name').textContent = file.name;
+    document.getElementById('upload-preview').classList.add('show');
+    document.getElementById('upload-area').classList.add('active');
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearFile() {
+  fileDataUrl = null;
+  document.getElementById('img-file').value = '';
+  document.getElementById('upload-preview').classList.remove('show');
+  document.getElementById('upload-area').classList.remove('active');
+}
+
+// ── COLORS ────────────────────────────────────────────────────────────────────
+function onColorChange(which, val) {
+  document.getElementById(which + '-hex').value = val;
+  document.getElementById(which + '-swatch').style.background = val;
+}
+
+function onHexInput(which, val) {
+  if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+    document.getElementById(which + '-color').value = val;
+    document.getElementById(which + '-swatch').style.background = val;
+  }
+}
+
+function applyPreset(fg, bg) {
+  document.getElementById('fg-color').value = fg;
+  document.getElementById('fg-hex').value = fg;
+  document.getElementById('fg-swatch').style.background = fg;
+  document.getElementById('bg-color').value = bg;
+  document.getElementById('bg-hex').value = bg;
+  document.getElementById('bg-swatch').style.background = bg;
+}
+
+// ── STYLES ────────────────────────────────────────────────────────────────────
+const STYLES = [
+  { id: 'classic',     label: 'Classic',     bg: 'white',          wrapClass: '' },
+  { id: 'shadow',      label: 'Shadow',      bg: 'white',          wrapClass: '', shadow: true },
+  { id: 'gradient-bg', label: 'Gradient',    bg: 'gradient',       wrapClass: 'gradient-bg' },
+  { id: 'dark',        label: 'Dark',        bg: '#111',           wrapClass: 'dark-bg' },
+  { id: 'rounded',     label: 'Rounded',     bg: 'white',          wrapClass: '', rounded: true },
+  { id: 'neon',        label: 'Neon',        bg: '#0a0a0a',        wrapClass: 'neon-bg' },
+  { id: 'paper',       label: 'Paper',       bg: '#f5f0e8',        wrapClass: 'paper-bg' },
+  { id: 'border',      label: 'Bordered',    bg: 'white',          wrapClass: '', border: true },
+  { id: 'transparent', label: 'Transparent', bg: 'transparent',   wrapClass: 'transparent-bg' },
+  { id: 'stamp',       label: 'Stamp',       bg: 'white',          wrapClass: '', stamp: true },
+];
+
+let selectedStyle = 'classic';
+
+function buildStylesGrid() {
+  const grid = document.getElementById('styles-grid');
+  grid.innerHTML = '';
+  STYLES.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'style-card' + (s.id === selectedStyle ? ' selected' : '');
+    card.onclick = () => {
+      selectedStyle = s.id;
+      document.querySelectorAll('.style-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+    };
+    const label = document.createElement('div');
+    label.className = 'style-label';
+    label.textContent = s.label;
+
+    // mini style icon
+    const icon = document.createElement('div');
+    icon.style.cssText = 'width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:18px;';
+    const styleIcons = ['◼','🌑','🌈','🌚','⬜','💫','📄','🔲','🔳','🖂'];
+    const idx = STYLES.findIndex(x => x.id === s.id);
+    icon.textContent = styleIcons[idx] || '◼';
+
+    card.appendChild(icon);
+    card.appendChild(label);
+    grid.appendChild(card);
+  });
+}
+
+buildStylesGrid();
+
+// ── QR GENERATION ─────────────────────────────────────────────────────────────
+let lastQRData = null;
+let lastFg = '#1a0533';
+let lastBg = '#ffffff';
+
+function generateQR() {
+  const fg = document.getElementById('fg-color').value;
+  const bg = document.getElementById('bg-color').value;
+
+  let data = '';
+  if (currentTab === 'link') {
+    data = document.getElementById('link-input').value.trim();
+    if (!data) {
+      document.getElementById('link-error').classList.add('show');
+      showToast(i18n[currentLang].toast_nolink, 'error');
+      return;
+    }
+    document.getElementById('link-error').classList.remove('show');
+  } else {
+    if (!fileDataUrl) {
+      document.getElementById('img-error').classList.add('show');
+      showToast(i18n[currentLang].toast_noimg, 'error');
+      return;
+    }
+    document.getElementById('img-error').classList.remove('show');
+    data = fileDataUrl;
+  }
+
+  lastQRData = data;
+  lastFg = fg;
+  lastBg = bg;
+
+  renderQR(data, fg, bg);
+  showToast(i18n[currentLang].toast_gen, 'success');
+}
+
+function renderQR(data, fg, bg) {
+  const output = document.getElementById('qr-output');
+  output.innerHTML = '';
+
+  const style = STYLES.find(s => s.id === selectedStyle) || STYLES[0];
+
+  // Update wrap class
+  const wrap = document.getElementById('qr-bg-wrap');
+  wrap.className = 'qr-canvas-wrap ' + (style.wrapClass || '');
+
+  // Adjust actual bg for dark/neon styles
+  let realBg = bg;
+  if (style.id === 'dark' || style.id === 'neon') realBg = '#111111';
+  if (style.id === 'transparent') realBg = 'rgba(0,0,0,0)';
+  if (style.id === 'paper') realBg = '#f5f0e8';
+  if (style.id === 'gradient-bg') realBg = '#ffffff';
+
+  const qrSize = 220;
+
+  const container = document.createElement('div');
+  container.style.cssText = `position:relative;display:inline-block;`;
+
+  if (style.id === 'shadow') {
+    container.style.boxShadow = '0 8px 32px rgba(0,0,0,0.25)';
+    container.style.borderRadius = '8px';
+  }
+  if (style.id === 'rounded') {
+    container.style.borderRadius = '20px';
+    container.style.overflow = 'hidden';
+  }
+  if (style.id === 'border') {
+    container.style.border = `6px solid ${fg}`;
+    container.style.borderRadius = '6px';
+  }
+  if (style.id === 'stamp') {
+    container.style.border = `8px dashed ${fg}`;
+    container.style.borderRadius = '4px';
+    container.style.padding = '8px';
+    container.style.background = realBg;
+  }
+  if (style.id === 'neon') {
+    container.style.boxShadow = `0 0 20px ${fg}, 0 0 40px ${fg}44`;
+  }
+
+  output.appendChild(container);
+
+  new QRCode(container, {
+    text: data.length > 2000 ? data.substring(0, 2000) : data,
+    width: qrSize,
+    height: qrSize,
+    colorDark: fg,
+    colorLight: style.id === 'transparent' ? 'rgba(255,255,255,0)' : (realBg === 'rgba(0,0,0,0)' ? '#ffffff' : realBg),
+    correctLevel: QRCode.CorrectLevel.H,
+  });
+
+  // Fix canvas styling for rounded
+  if (style.id === 'rounded') {
+    setTimeout(() => {
+      const cvs = container.querySelector('canvas');
+      if (cvs) { cvs.style.borderRadius = '16px'; cvs.style.display = 'block'; }
+    }, 50);
+  }
+}
+
+// ── DOWNLOAD PNG ──────────────────────────────────────────────────────────────
+function downloadPNG() {
+  if (!lastQRData) { showToast(i18n[currentLang].toast_nogen, 'error'); return; }
+
+  const style = STYLES.find(s => s.id === selectedStyle) || STYLES[0];
+  const cvs = document.querySelector('#qr-output canvas');
+  if (!cvs) { showToast(i18n[currentLang].toast_nogen, 'error'); return; }
+
+  const size = 800;
+  const pad = style.id === 'stamp' ? 60 : (style.id === 'border' ? 30 : 40);
+  const out = document.createElement('canvas');
+  out.width = size + pad * 2;
+  out.height = size + pad * 2;
+  const ctx = out.getContext('2d');
+
+  // Background
+  let bgStyle = lastBg;
+  if (style.id === 'dark' || style.id === 'neon') bgStyle = '#111111';
+  else if (style.id === 'transparent') bgStyle = 'rgba(0,0,0,0)';
+  else if (style.id === 'paper') bgStyle = '#f5f0e8';
+  else if (style.id === 'gradient-bg') {
+    const grd = ctx.createLinearGradient(0, 0, out.width, out.height);
+    grd.addColorStop(0, '#667eea');
+    grd.addColorStop(1, '#764ba2');
+    bgStyle = grd;
+  }
+
+  if (style.id === 'rounded') {
+    const r = 40;
+    ctx.beginPath();
+    ctx.moveTo(r, 0); ctx.lineTo(out.width - r, 0);
+    ctx.arcTo(out.width, 0, out.width, r, r);
+    ctx.lineTo(out.width, out.height - r);
+    ctx.arcTo(out.width, out.height, out.width - r, out.height, r);
+    ctx.lineTo(r, out.height); ctx.arcTo(0, out.height, 0, out.height - r, r);
+    ctx.lineTo(0, r); ctx.arcTo(0, 0, r, 0, r);
+    ctx.closePath();
+    ctx.fillStyle = lastBg;
+    ctx.fill();
+  } else if (bgStyle !== 'rgba(0,0,0,0)') {
+    ctx.fillStyle = bgStyle;
+    ctx.fillRect(0, 0, out.width, out.height);
+  }
+
+  if (style.id === 'shadow') {
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 30;
+    ctx.shadowOffsetY = 10;
+  }
+  if (style.id === 'neon') {
+    ctx.shadowColor = lastFg;
+    ctx.shadowBlur = 30;
+  }
+
+  ctx.drawImage(cvs, pad, pad, size, size);
+
+  if (style.id === 'border') {
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = lastFg;
+    ctx.lineWidth = 16;
+    ctx.strokeRect(8, 8, out.width - 16, out.height - 16);
+  }
+  if (style.id === 'stamp') {
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = lastFg;
+    ctx.lineWidth = 14;
+    ctx.setLineDash([24, 14]);
+    ctx.strokeRect(7, 7, out.width - 14, out.height - 14);
+  }
+
+  const link = document.createElement('a');
+  link.download = 'qr-wizard.png';
+  link.href = out.toDataURL('image/png');
+  link.click();
+  showToast(i18n[currentLang].toast_png, 'success');
+}
+
+// ── DOWNLOAD SVG ──────────────────────────────────────────────────────────────
+function downloadSVG() {
+  if (!lastQRData) { showToast(i18n[currentLang].toast_nogen, 'error'); return; }
+
+  const cvs = document.querySelector('#qr-output canvas');
+  if (!cvs) { showToast(i18n[currentLang].toast_nogen, 'error'); return; }
+
+  const style = STYLES.find(s => s.id === selectedStyle) || STYLES[0];
+  const size = 400;
+  const pad = 30;
+  const total = size + pad * 2;
+
+  let bgFill = lastBg;
+  if (style.id === 'dark' || style.id === 'neon') bgFill = '#111111';
+  else if (style.id === 'transparent') bgFill = 'none';
+  else if (style.id === 'paper') bgFill = '#f5f0e8';
+
+  let defs = '';
+  if (style.id === 'gradient-bg') {
+    bgFill = 'url(#bggrad)';
+    defs = `<defs><linearGradient id="bggrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea"/>
+      <stop offset="100%" style="stop-color:#764ba2"/>
+    </linearGradient></defs>`;
+  }
+
+  let extras = '';
+  if (style.id === 'border') extras = `<rect x="4" y="4" width="${total-8}" height="${total-8}" fill="none" stroke="${lastFg}" stroke-width="8"/>`;
+  if (style.id === 'shadow') extras = `<filter id="sh"><feDropShadow dx="0" dy="6" stdDeviation="12" flood-opacity="0.25"/></filter>`;
+  if (style.id === 'neon') extras = `<filter id="neon"><feGaussianBlur stdDeviation="8" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
+  if (style.id === 'stamp') extras = `<rect x="4" y="4" width="${total-8}" height="${total-8}" fill="none" stroke="${lastFg}" stroke-width="10" stroke-dasharray="24 12"/>`;
+
+  let imgExtra = '';
+  if (style.id === 'shadow') imgExtra = 'filter="url(#sh)"';
+  if (style.id === 'neon') imgExtra = 'filter="url(#neon)"';
+
+  let rx = '0';
+  if (style.id === 'rounded') { rx = '20'; bgFill = lastBg; }
+
+  const dataUrl = cvs.toDataURL('image/png');
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" width="${total}" height="${total}">
+${defs}
+<defs>${extras}</defs>
+<rect x="0" y="0" width="${total}" height="${total}" rx="${rx}" fill="${bgFill}"/>
+<image href="${dataUrl}" x="${pad}" y="${pad}" width="${size}" height="${size}" ${imgExtra}/>
+${style.id === 'border' ? `<rect x="4" y="4" width="${total-8}" height="${total-8}" fill="none" stroke="${lastFg}" stroke-width="8"/>` : ''}
+${style.id === 'stamp' ? `<rect x="4" y="4" width="${total-8}" height="${total-8}" fill="none" stroke="${lastFg}" stroke-width="10" stroke-dasharray="24 12"/>` : ''}
+</svg>`;
+
+  const blob = new Blob([svg], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.download = 'qr-wizard.svg';
+  link.href = url;
+  link.click();
+  URL.revokeObjectURL(url);
+  showToast(i18n[currentLang].toast_svg, 'success');
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.classList.remove('show'); }, 2800);
+}
+
+// ── DRAG & DROP ───────────────────────────────────────────────────────────────
+const uploadArea = document.getElementById('upload-area');
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('active'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('active'));
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      fileDataUrl = ev.target.result;
+      document.getElementById('preview-img').src = fileDataUrl;
+      document.getElementById('preview-name').textContent = file.name;
+      document.getElementById('upload-preview').classList.add('show');
+      uploadArea.classList.add('active');
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+// Init
+setLang('az');
+</script>
+</body>
+</html>
